@@ -8,6 +8,8 @@ const scrypt = promisify(crypto.scrypt);
 
 app.set('view-engine', 'ejs');
 app.use(express.urlencoded({ extended: false }));
+app.use(require('./parse-cookie'));
+app.use(require('./auth.js'));
 
 let users = [];
 
@@ -15,7 +17,7 @@ let users = [];
 app.get('/', (req, res) => {
   res.render('index.ejs', {
     users: JSON.stringify(users, false, 4),
-    cookies: JSON.stringify(req.headers.cookie, false, 4)
+    cookie: JSON.stringify(req.cookies, false, 4)
   });
 });
 
