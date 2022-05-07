@@ -2,9 +2,9 @@ const jwt = require('jsonwebtoken');
 
 function verify_user(token) {
   return new Promise((res, rej) => {
-    if (token == null) throw new Error('no access_token provided');
+    if (token == null) rej('no access_token provided');
     jwt.verify(token, 'techieland', (err, user) => {
-      if (err) throw new Error('invalid access_token');
+      if (err) rej('invalid access_token');
       return res(user);
     });
   });
@@ -19,12 +19,10 @@ module.exports = async (req, res, next) => {
     has_token = false;
   }
   let uri_auth = ['/login', '/register'].includes(req.url);
-
   if (!has_token) {
     if (!uri_auth) return res.redirect('/login');
     else return next();
   }
-
   req.user = user;
   if (!uri_auth) return next();
   else return res.redirect('/');

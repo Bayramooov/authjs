@@ -11,13 +11,13 @@ async function create_user(payload) {
     !payload.name ||
     !payload.email ||
     !payload.password
-  ) throw new Error('not enougt credentials');
+  ) return Promise.reject('not enougt credentials');
 
   try {
-    var passwordHash = await scrypt(req.body.password, 'techieland', 64);
+    var passwordHash = await scrypt(payload.password, 'techieland', 64);
     passwordHash = passwordHash.toString('hex');
   } catch (err) {
-    throw err;
+    return Promise.reject(err);
   }
 
   return {
@@ -35,16 +35,16 @@ function sign(user) {
 async function verify(email, password) {
   const user = users.find(user => user.email === email);
   if (user == null) {
-    throw new Error(`user not found, email: ${email}`);
+    return Promise.reject(`user not found, email: ${email}`);
   }
   try {
     var passwordHash = await scrypt(password, 'techieland', 64);
   } catch (err) {
-    throw err;
+    return Promise.reject(err);
   }
   const oldPasswordHash = Buffer.from(user.password, 'hex');
   if (!crypto.timingSafeEqual(oldPasswordHash, passwordHash)) {
-    throw new Error('wrong password');
+    return Promise.reject('wrong password');
   }
   return sign(user);
 }
@@ -59,14 +59,14 @@ let users = [
     id: 1,
     name: 'Sardor Bayramov',
     email: 'Sardor@techie.com',
-    password: 'd99853fd8d04c690e46968f893adcd3a:d40715fa483aa61053d8c026f4ae511e7b59fe55ec02cd1861d386f1d60bd31a2262c4c0aecf50d50e96495efce90f0d4a6094c3888ef6eca1179472ad3bfbbb'
+    // password: 1,
+    password: 'f7cc218a5e35f3c1cc02791af8d77f438944c7a2f4de525d4f1222e6b73b327336b86630600b67bb74ba1235c13eeea369f966990371602373fc6bae8c91eb87'
   }
 ];
 
 ////////////////////////////////////////////////// Dashboard
 app.get('/', (req, res) => {
   res.render('index.ejs', {
-    cookie: JSON.stringify(req.cookies, false, 4),
     user: JSON.stringify(users.find(u => u.id === req.user.id), false, 4)
   });
 });
@@ -85,11 +85,7 @@ app.post('/register', async (req, res) => {
     res.setHeader('set-cookie', `access_token=-1; Max-Age=-1`);
     return res.redirect('/register');
   }
-
-  const access_token = sign(user);
-  console.log('access_token', access_token);
-
-  res.setHeader('set-cookie', `access_token=${access_token}`);
+  res.setHeader('set-cookie', `access_token=${sign(user)}`);
   return res.redirect('/');
 });
 
