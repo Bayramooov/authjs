@@ -1,13 +1,28 @@
-module.exports = (req, res, next) => {
-  if (req.url === '/login') next();
+const jwt = require('jsonwebtoken');
 
-  const token = req.cookies.access_token;
-  if (token == null) return res.redirect('/login');
-
-  jwt.verify(token, 'techieland', (err, user) => {
-    if (err) res.redirect('/login');
-    req.user = user;
-    if (['/login', '/register'].includes(req.url)) return res.redirect('/');
-    next();
+function verify_user(token) {
+  return new Promise((res, rej) => {
+    if (token == null) return rej(false);
+    jwt.verify(token, 'techieland', (err, user) => {
+      if (err) return rej(false);
+      return res(true);
+    });
   });
+}
+
+module.exports = async (req, res, next) => {
+  console.log(req.cookies.access_token);
+  try {
+    var is_auth = await verify_user(req.cookies.access_token);
+  } catch (err) {
+    is_auth = false;
+  }
+
+  let routes = ['/login', '/register'];
+  let is_login = routes.includes(req.url);
+
+  if (!is_auth && !is_login) return res.redirect('/login');
+  else if (!is_auth && is_login) return next();
+  else if (is_auth && !is_login) return next();
+  else if (is_auth && is_login) return res.redirect('/');
 }
