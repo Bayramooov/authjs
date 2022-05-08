@@ -85,7 +85,7 @@ app.post('/register', async (req, res) => {
     res.setHeader('set-cookie', `access_token=-1; Max-Age=-1`);
     return res.redirect('/register');
   }
-  res.setHeader('set-cookie', `access_token=${sign(user)}`);
+  res.setHeader('set-cookie', `access_token=${sign(user)}; Max-Age=60`);
   return res.redirect('/');
 });
 
@@ -102,7 +102,7 @@ app.post('/login', async (req, res) => {
     res.setHeader('set-cookie', 'access_token=-1; Max-Age=-1');
     return res.redirect('/login');
   }
-  res.setHeader('set-cookie', `access_token=${access_token}`);
+  res.setHeader('set-cookie', `access_token=${access_token}; Max-Age=60`);
   return res.redirect('/');
 });
 
