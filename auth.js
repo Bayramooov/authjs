@@ -1,13 +1,14 @@
 const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
+const verify = promisify(jwt.verify);
 
-function verify_user(token) {
-  return new Promise((res, rej) => {
-    if (token == null) rej('no access_token provided');
-    jwt.verify(token, 'techieland', (err, user) => {
-      if (err) rej('invalid access_token');
-      return res(user);
-    });
-  });
+async function verify_user(token) {
+  if (token == null) throw 'no access_token provided';
+  try {
+    return await verify(token, 'techieland');
+  } catch {
+    throw 'invalid access_token';
+  }
 }
 
 module.exports = async (req, res, next) => {

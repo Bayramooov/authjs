@@ -1,25 +1,16 @@
 const express = require('express');
-const crypto = require('crypto');
+const { timingSafeEqual, scryptSync } = require('crypto');
 const jwt = require('jsonwebtoken');
-const { promisify } = require('util');
 const app = express();
-const port = 4100;
-const scrypt = promisify(crypto.scrypt);
+const port = 443;
 
-async function create_user(payload) {
+function create_user(payload) {
   if (
     !payload.name ||
     !payload.email ||
     !payload.password
-  ) return Promise.reject('not enougt credentials');
-
-  try {
-    var passwordHash = await scrypt(payload.password, 'techieland', 64);
-    passwordHash = passwordHash.toString('hex');
-  } catch (err) {
-    return Promise.reject(err);
-  }
-
+  ) throw new Error('not enougt credentials');
+  let passwordHash = scryptSync(payload.password, 'techieland', 64).toString('hex');
   return {
     id: Date.now().toString(),
     name: payload.name,
@@ -32,19 +23,15 @@ function sign(user) {
   return jwt.sign(user, 'techieland');
 }
 
-async function verify(email, password) {
+function verify(email, password) {
   const user = users.find(user => user.email === email);
   if (user == null) {
-    return Promise.reject(`user not found, email: ${email}`);
-  }
-  try {
-    var passwordHash = await scrypt(password, 'techieland', 64);
-  } catch (err) {
-    return Promise.reject(err);
+    throw new Error(`user not found, email: ${email}`);
   }
   const oldPasswordHash = Buffer.from(user.password, 'hex');
-  if (!crypto.timingSafeEqual(oldPasswordHash, passwordHash)) {
-    return Promise.reject('wrong password');
+  const passwordHash = scryptSync(password, 'techieland', 64);
+  if (!timingSafeEqual(oldPasswordHash, passwordHash)) {
+    throw new Error('wrong password');
   }
   return sign(user);
 }
@@ -67,7 +54,8 @@ let users = [
 ////////////////////////////////////////////////// Dashboard
 app.get('/', (req, res) => {
   res.render('index.ejs', {
-    user: JSON.stringify(users.find(u => u.id === req.user.id), false, 4)
+    me: JSON.stringify(users.find(u => u.id === req.user.id), false, 4),
+    users: JSON.stringify(users.map(u => u.name), false, 4)
   });
 });
 
@@ -76,13 +64,14 @@ app.get('/register', (req, res) => {
   res.render('register.ejs');
 });
 
-app.post('/register', async (req, res) => {
+app.post('/register', (req, res) => {
   try {
-    var user = await create_user(req.body);
+    var user = create_user(req.body);
     users.push(user);
   } catch (err) {
     console.error(err);
     res.setHeader('set-cookie', `access_token=-1; Max-Age=-1`);
+    res.setHeader('set-cookie', `error_message=${err}; Max-Age=60`);
     return res.redirect('/register');
   }
   res.setHeader('set-cookie', `access_token=${sign(user)}; Max-Age=60`);
@@ -94,12 +83,13 @@ app.get('/login', (req, res) => {
   res.render('login.ejs');
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login', (req, res) => {
   try {
-    var access_token = await verify(req.body.email, req.body.password);
+    var access_token = verify(req.body.email, req.body.password);
   } catch (err) {
     console.error(err);
     res.setHeader('set-cookie', 'access_token=-1; Max-Age=-1');
+    res.setHeader('set-cookie', `error_message=${err}; Max-Age=60`);
     return res.redirect('/login');
   }
   res.setHeader('set-cookie', `access_token=${access_token}; Max-Age=60`);
