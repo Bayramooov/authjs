@@ -38,6 +38,7 @@ function verify(email, password) {
 
 app.set('view-engine', 'ejs');
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(require('./parse-cookie'));
 app.use(require('./auth.js'));
 

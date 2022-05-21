@@ -1,0 +1,28 @@
+GET http://localhost:443/
+
+###
+POST http://localhost:443/login
+Content-Type: application/json
+
+# {
+#   "email": "Sardor@techie.com",
+#   "password": "1"
+# }
+
+{
+  "email": "Barno@techie.com",
+  "password": "123"
+}
+
+###
+POST http://localhost:443/register
+Content-Type: application/json
+
+{
+  "name": "Barno Bayramova",
+  "email": "Barno@techie.com",
+  "password": "123"
+}
+
+###
+GET http://localhost:443/logout
